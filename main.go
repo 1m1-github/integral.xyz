@@ -1,6 +1,7 @@
 // go build && ./api
 // todo:
-// pagination, rate limiting, input validation, db caching
+// pagination, input validation, db caching
+// integral.xyz accountId, requestId
 
 package main
 
