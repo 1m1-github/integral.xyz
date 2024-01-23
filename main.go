@@ -26,6 +26,7 @@ type Transaction struct {
 	Decimal     int64  `json:"decimal"`
 	Timestamp   string `json:"timestamp"`
 	TxnHash     string `json:"txnHash"`
+    BlockNumber int64 `json:"blockNumber"`
 }
 
 func main() {
@@ -72,8 +73,14 @@ func translateTranferToTransaction(accountId string, transfer AlchemyTransfer) (
 	}
 	t.Amount = fmt.Sprint(transfer.Value) // todo: perhaps only as many digits as decimals in token
 	t.Symbol = transfer.Asset
-	t.Decimal, _ = strconv.ParseInt(transfer.RawContract.Decimal[2:], 16, 64) // Decimal[2:] to ignore 0x of hex
+	t.Decimal = hexStringToInt(transfer.RawContract.Decimal)
 	t.Timestamp = transfer.Metadata.BlockTimestamp
 	t.TxnHash = transfer.Hash
+    t.BlockNumber = hexStringToInt(transfer.BlockNum)
 	return
+}
+
+func hexStringToInt(x string) (y int64) {
+    y, _ = strconv.ParseInt(x[2:], 16, 64) // x[2:] to ignore 0x of hex
+    return
 }
