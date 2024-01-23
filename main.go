@@ -45,24 +45,37 @@ func TransactionsHandler(c *gin.Context) {
 	// Get the accountId from the URL
 	accountId := c.Param("accountId")
 
-	alchemyResponse := AlchemyGetTransfers(accountId)
+	alchemyResponse, err := AlchemyGetTransfers(accountId)
+    if err != nil {
+        c.JSON(http.StatusNotFound, err) // todo: correct error codes
+    }
 
-	response := translateAPIResponse(accountId, alchemyResponse)
+	response, err := translateAPIResponse(accountId, alchemyResponse)
+    if err != nil {
+        c.JSON(http.StatusNotFound, err) // todo: correct error codes
+    }
 
 	// Respond with the struct marshalled as JSON
 	c.JSON(http.StatusOK, response)
 }
 
-func translateAPIResponse(accountId string, alchemyResponse AlchemyAPIResponse) (response APIResponse) {
-	response.Count = len(alchemyResponse.Result.Transfers)
+func translateAPIResponse(accountId string, alchemyResponse *AlchemyAPIResponse) (*APIResponse, error) {
+	var response APIResponse
+    response.Count = len(alchemyResponse.Result.Transfers)
 	response.Data = make([]Transaction, response.Count)
 	for i, transfer := range alchemyResponse.Result.Transfers {
-		response.Data[i] = translateTranferToTransaction(accountId, transfer)
+		data, err := translateTranferToTransaction(accountId, transfer)
+        if err != nil {
+            return nil, err
+        }
+        response.Data[i] = *data
 	}
-	return
+	return &response, nil
 }
 
-func translateTranferToTransaction(accountId string, transfer AlchemyTransfer) (t Transaction) {
+func translateTranferToTransaction(accountId string, transfer AlchemyTransfer) (*Transaction, error) {
+    var t Transaction
+
 	t.ID = transfer.UniqueId
 	t.AccountID = accountId
 	t.ToAddress = transfer.To
@@ -71,16 +84,30 @@ func translateTranferToTransaction(accountId string, transfer AlchemyTransfer) (
 	if t.AccountID == t.FromAddress {
 		t.Type = "withdrawal"
 	}
-	t.Amount = fmt.Sprint(transfer.Value) // todo: perhaps only as many digits as decimals in token
+	t.Amount = fmt.Sprint(*transfer.Value) // todo: perhaps only as many digits as decimals in token
 	t.Symbol = *transfer.Asset
-	t.Decimal = hexStringToInt(*transfer.RawContract.Decimal)
 	t.Timestamp = transfer.Metadata.BlockTimestamp
 	t.TxnHash = transfer.Hash
-    t.BlockNumber = hexStringToInt(transfer.BlockNum)
-	return
+
+    decimal, err := hexStringToInt(*transfer.RawContract.Decimal)
+    if err != nil {
+        return nil, err
+    }
+    t.Decimal = decimal
+
+    blockNumber, err := hexStringToInt(transfer.BlockNum)
+    if err != nil {
+        return nil, err
+    }
+    t.BlockNumber = blockNumber
+
+	return &t, nil
 }
 
-func hexStringToInt(x string) (y int64) {
-    y, _ = strconv.ParseInt(x[2:], 16, 64) // x[2:] to ignore 0x of hex
-    return
+func hexStringToInt(x string) (int64, error) {
+    y, err := strconv.ParseInt(x[2:], 16, 64) // x[2:] to ignore 0x of hex
+    if err != nil {
+        return 0, err
+    }
+    return y, nil
 }
