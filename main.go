@@ -30,12 +30,12 @@ func main() {
 	// Example: Allow 5 requests per second with a burst of 2
 	r.Use(RateLimitMiddleware(5, 2))
 
-	// Define the endpoint with a URL parameter
+	// Define the endpoints with a URL parameter
 	r.GET("/accounts/:accountId/transactions", TransactionsHandler)
 	r.GET("/accounts/:accountId/balances", BalancesHandler)
 
-	// Start the server on port 8080
-	r.Run(":8080") // listen and serve on 0.0.0.0:8080
+	// Start the server on 0.0.0.0:8080
+	r.Run(":8080")
 }
 
 // RateLimitMiddleware creates a new rate limiter middleware
