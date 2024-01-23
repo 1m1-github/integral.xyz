@@ -6,27 +6,26 @@ import (
 	"fmt"
 	"net/http"
 	"strconv"
-	"time"
 
 	"github.com/gin-gonic/gin"
 )
 
 type APIResponse struct {
-	Data	[]Transaction	`json:"data"`
-	Count	int	`json:"count"`
+	Data  []Transaction `json:"data"`
+	Count int           `json:"count"`
 }
 
 type Transaction struct {
-	ID          string    `json:"id"`
-	AccountID   string    `json:"accountId"`
-	ToAddress   string    `json:"toAddress"`
-	FromAddress string    `json:"fromAddress"`
-	Type        string    `json:"type"`   // could also be a custom type or enum for "deposit" or "withdrawal"
-	Amount      string    `json:"amount"` // string to preserve decimal precision
-	Symbol      string    `json:"symbol"`
-	Decimal     int64      `json:"decimal"`
-	Timestamp   time.Time `json:"timestamp"` // using time.Time to parse the date-time format
-	TxnHash     string    `json:"txnHash"`
+	ID          string `json:"id"`
+	AccountID   string `json:"accountId"`
+	ToAddress   string `json:"toAddress"`
+	FromAddress string `json:"fromAddress"`
+	Type        string `json:"type"`   // could also be a custom type or enum for "deposit" or "withdrawal"
+	Amount      string `json:"amount"` // string to preserve decimal precision
+	Symbol      string `json:"symbol"`
+	Decimal     int64  `json:"decimal"`
+	Timestamp   string `json:"timestamp"`
+	TxnHash     string `json:"txnHash"`
 }
 
 func main() {
@@ -50,7 +49,7 @@ func TransactionsHandler(c *gin.Context) {
 	response := translateAPIResponse(accountId, alchemyResponse)
 
 	// Respond with the struct marshalled as JSON
-    c.JSON(http.StatusOK, response)
+	c.JSON(http.StatusOK, response)
 }
 
 func translateAPIResponse(accountId string, alchemyResponse AlchemyAPIResponse) (response APIResponse) {
@@ -73,8 +72,8 @@ func translateTranferToTransaction(accountId string, transfer AlchemyTransfer) (
 	}
 	t.Amount = fmt.Sprint(transfer.Value) // todo: perhaps only as many digits as decimals in token
 	t.Symbol = transfer.Asset
-	t.Decimal, _ = strconv.ParseInt(transfer.RawContract.Decimal, 16, 64)
-	t.Timestamp, _ = time.Parse(time.RFC3339, transfer.Metadata.BlockTimestamp)
+	t.Decimal, _ = strconv.ParseInt(transfer.RawContract.Decimal[2:], 16, 64) // Decimal[2:] to ignore 0x of hex
+	t.Timestamp = transfer.Metadata.BlockTimestamp
 	t.TxnHash = transfer.Hash
 	return
 }
