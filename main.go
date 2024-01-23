@@ -10,6 +10,7 @@ import (
 	"strconv"
 
 	"github.com/gin-gonic/gin"
+	"golang.org/x/time/rate"
 )
 
 type APIResponse struct {
@@ -35,11 +36,28 @@ func main() {
 	// Initialize the Gin engine.
 	r := gin.Default()
 
+    // Apply the rate limiter middleware
+    // Example: Allow 5 requests per second with a burst of 2
+    r.Use(RateLimitMiddleware(5, 2))
+    
 	// Define the endpoint with a URL parameter
 	r.GET("/accounts/:accountId/transactions", TransactionsHandler)
 
 	// Start the server on port 8080
 	r.Run(":8080") // listen and serve on 0.0.0.0:8080
+}
+
+// RateLimitMiddleware creates a new rate limiter middleware
+func RateLimitMiddleware(r rate.Limit, b int) gin.HandlerFunc {
+    limiter := rate.NewLimiter(r, b)
+
+    return func(c *gin.Context) {
+        if !limiter.Allow() {
+            c.AbortWithStatusJSON(http.StatusTooManyRequests, gin.H{"error": "Too many requests"})
+            return
+        }
+        c.Next()
+    }
 }
 
 // TransactionsHandler handles requests to the /accounts/:accountId/transactions endpoint
