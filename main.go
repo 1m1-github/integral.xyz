@@ -1,3 +1,5 @@
+// go build && ./api
+
 package main
 
 import (
@@ -12,6 +14,19 @@ import (
 type APIResponse struct {
 	Data	[]Transaction	`json:"data"`
 	Count	int	`json:"count"`
+}
+
+type Transaction struct {
+	ID          string    `json:"id"`
+	AccountID   string    `json:"accountId"`
+	ToAddress   string    `json:"toAddress"`
+	FromAddress string    `json:"fromAddress"`
+	Type        string    `json:"type"`   // could also be a custom type or enum for "deposit" or "withdrawal"
+	Amount      string    `json:"amount"` // string to preserve decimal precision
+	Symbol      string    `json:"symbol"`
+	Decimal     int64      `json:"decimal"`
+	Timestamp   time.Time `json:"timestamp"` // using time.Time to parse the date-time format
+	TxnHash     string    `json:"txnHash"`
 }
 
 func main() {
@@ -32,10 +47,10 @@ func TransactionsHandler(c *gin.Context) {
 
 	alchemyResponse := AlchemyGetTransfers(accountId)
 
-	translateAPIResponse(accountId, alchemyResponse)
+	response := translateAPIResponse(accountId, alchemyResponse)
 
 	// Respond with the struct marshalled as JSON
-    c.JSON(http.StatusOK, alchemyResponse)
+    c.JSON(http.StatusOK, response)
 }
 
 func translateAPIResponse(accountId string, alchemyResponse AlchemyAPIResponse) (response APIResponse) {
@@ -62,17 +77,4 @@ func translateTranferToTransaction(accountId string, transfer AlchemyTransfer) (
 	t.Timestamp, _ = time.Parse(time.RFC3339, transfer.Metadata.BlockTimestamp)
 	t.TxnHash = transfer.Hash
 	return
-}
-
-type Transaction struct {
-	ID          string    `json:"id"`
-	AccountID   string    `json:"accountId"`
-	ToAddress   string    `json:"toAddress"`
-	FromAddress string    `json:"fromAddress"`
-	Type        string    `json:"type"`   // could also be a custom type or enum for "deposit" or "withdrawal"
-	Amount      string    `json:"amount"` // string to preserve decimal precision
-	Symbol      string    `json:"symbol"`
-	Decimal     int64      `json:"decimal"`
-	Timestamp   time.Time `json:"timestamp"` // using time.Time to parse the date-time format
-	TxnHash     string    `json:"txnHash"`
 }
