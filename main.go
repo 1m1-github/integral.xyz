@@ -1,8 +1,12 @@
 package main
 
 import (
-    "github.com/gin-gonic/gin"
-    "net/http"
+	"fmt"
+	"io"
+	"net/http"
+	"strings"
+
+	"github.com/gin-gonic/gin"
 )
 
 func main() {
@@ -21,6 +25,25 @@ func TransactionsHandler(c *gin.Context) {
     // Get the accountId from the URL
     accountId := c.Param("accountId")
 
-    // For demonstration, we'll just return the accountId in the response
-    c.String(http.StatusOK, "Transactions for account ID: %s", accountId)
+    alchemyGetTransfers(accountId)
+}
+
+func alchemyGetTransfers(accountId string) {
+	url := "https://eth-mainnet.g.alchemy.com/v2/qmL5zSTAO4Eg3I1O3gdnCommibXbh5Ga"
+
+	payloadStr := fmt.Sprintf(`{"id":1,"jsonrpc":"2.0","method":"alchemy_getAssetTransfers","params":[{"category":["external","internal","erc20","specialnft"],"order":"desc","fromBlock":"0x0","toBlock":"latest","toAddress":"%s","withMetadata":true,"excludeZeroValue":true,"maxCount":"0x3e8"}]}`, accountId)
+	payload := strings.NewReader(payloadStr)
+
+	req, _ := http.NewRequest("POST", url, payload)
+
+	req.Header.Add("accept", "application/json")
+	req.Header.Add("content-type", "application/json")
+
+	res, _ := http.DefaultClient.Do(req)
+
+	defer res.Body.Close()
+	body, _ := io.ReadAll(res.Body)
+
+	fmt.Println(string(body))
+
 }
