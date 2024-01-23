@@ -72,8 +72,8 @@ func translateTranferToTransaction(accountId string, transfer AlchemyTransfer) (
 		t.Type = "withdrawal"
 	}
 	t.Amount = fmt.Sprint(transfer.Value) // todo: perhaps only as many digits as decimals in token
-	t.Symbol = transfer.Asset
-	t.Decimal = hexStringToInt(transfer.RawContract.Decimal)
+	t.Symbol = *transfer.Asset
+	t.Decimal = hexStringToInt(*transfer.RawContract.Decimal)
 	t.Timestamp = transfer.Metadata.BlockTimestamp
 	t.TxnHash = transfer.Hash
     t.BlockNumber = hexStringToInt(transfer.BlockNum)

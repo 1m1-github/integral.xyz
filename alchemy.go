@@ -13,26 +13,28 @@ type AlchemyMetadata struct {
 	BlockTimestamp string `json:"blockTimestamp"`
 }
 
+// Use a pointer for nullable fields
+
 // Define the struct for the raw contract
 type AlchemyRawContract struct {
-	Value   string  `json:"value"`
-	Address *string `json:"address"` // Use a pointer for nullable fields
-	Decimal string  `json:"decimal"`
+	Value   *string `json:"value"`
+	Address *string `json:"address"`
+	Decimal *string `json:"decimal"`
 }
 
 // Define the struct for each transfer item
 type AlchemyTransfer struct {
-	BlockNum        string      `json:"blockNum"`
-	UniqueId        string      `json:"uniqueId"`
-	Hash            string      `json:"hash"`
-	From            string      `json:"from"`
-	To              string      `json:"to"`
-	Value           float64     `json:"value"`
-	Erc721TokenId   *string     `json:"erc721TokenId"`   // Use a pointer for nullable fields
-	Erc1155Metadata *string     `json:"erc1155Metadata"` // Use a pointer for nullable fields
-	TokenId         *string     `json:"tokenId"`         // Use a pointer for nullable fields
-	Asset           string      `json:"asset"`
-	Category        string      `json:"category"`
+	BlockNum        string             `json:"blockNum"`
+	UniqueId        string             `json:"uniqueId"`
+	Hash            string             `json:"hash"`
+	From            string             `json:"from"`
+	To              string             `json:"to"`
+	Value           *float64           `json:"value"`
+	Erc721TokenId   *string            `json:"erc721TokenId"`
+	Erc1155Metadata *string            `json:"erc1155Metadata"`
+	TokenId         string            `json:"tokenId"`
+	Asset           *string             `json:"asset"`
+	Category        string             `json:"category"`
 	RawContract     AlchemyRawContract `json:"rawContract"`
 	Metadata        AlchemyMetadata    `json:"metadata"`
 }
