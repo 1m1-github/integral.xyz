@@ -2,48 +2,77 @@ package main
 
 import (
 	"fmt"
-	"io"
 	"net/http"
-	"strings"
+	"strconv"
+	"time"
 
 	"github.com/gin-gonic/gin"
 )
 
+type APIResponse struct {
+	Data	[]Transaction	`json:"data"`
+	Count	int	`json:"count"`
+}
+
 func main() {
-    // Initialize the Gin engine.
-    r := gin.Default()
+	// Initialize the Gin engine.
+	r := gin.Default()
 
-    // Define the endpoint with a URL parameter
-    r.GET("/accounts/:accountId/transactions", TransactionsHandler)
+	// Define the endpoint with a URL parameter
+	r.GET("/accounts/:accountId/transactions", TransactionsHandler)
 
-    // Start the server on port 8080
-    r.Run(":8080") // listen and serve on 0.0.0.0:8080
+	// Start the server on port 8080
+	r.Run(":8080") // listen and serve on 0.0.0.0:8080
 }
 
 // TransactionsHandler handles requests to the /accounts/:accountId/transactions endpoint
 func TransactionsHandler(c *gin.Context) {
-    // Get the accountId from the URL
-    accountId := c.Param("accountId")
+	// Get the accountId from the URL
+	accountId := c.Param("accountId")
 
-    alchemyGetTransfers(accountId)
+	alchemyResponse := AlchemyGetTransfers(accountId)
+
+	translateAPIResponse(accountId, alchemyResponse)
+
+	// Respond with the struct marshalled as JSON
+    c.JSON(http.StatusOK, alchemyResponse)
 }
 
-func alchemyGetTransfers(accountId string) {
-	url := "https://eth-mainnet.g.alchemy.com/v2/qmL5zSTAO4Eg3I1O3gdnCommibXbh5Ga"
+func translateAPIResponse(accountId string, alchemyResponse AlchemyAPIResponse) (response APIResponse) {
+	response.Count = len(alchemyResponse.Result.Transfers)
+	response.Data = make([]Transaction, response.Count)
+	for i, transfer := range alchemyResponse.Result.Transfers {
+		response.Data[i] = translateTranferToTransaction(accountId, transfer)
+	}
+	return
+}
 
-	payloadStr := fmt.Sprintf(`{"id":1,"jsonrpc":"2.0","method":"alchemy_getAssetTransfers","params":[{"category":["external","internal","erc20","specialnft"],"order":"desc","fromBlock":"0x0","toBlock":"latest","toAddress":"%s","withMetadata":true,"excludeZeroValue":true,"maxCount":"0x3e8"}]}`, accountId)
-	payload := strings.NewReader(payloadStr)
+func translateTranferToTransaction(accountId string, transfer AlchemyTransfer) (t Transaction) {
+	t.ID = transfer.UniqueId
+	t.AccountID = accountId
+	t.ToAddress = transfer.To
+	t.FromAddress = transfer.From
+	t.Type = "deposit" // default to deposit, consider self transfer
+	if t.AccountID == t.FromAddress {
+		t.Type = "withdrawal"
+	}
+	t.Amount = fmt.Sprint(transfer.Value) // todo: perhaps only as many digits as decimals in token
+	t.Symbol = transfer.Asset
+	t.Decimal, _ = strconv.ParseInt(transfer.RawContract.Decimal, 16, 64)
+	t.Timestamp, _ = time.Parse(time.RFC3339, transfer.Metadata.BlockTimestamp)
+	t.TxnHash = transfer.Hash
+	return
+}
 
-	req, _ := http.NewRequest("POST", url, payload)
-
-	req.Header.Add("accept", "application/json")
-	req.Header.Add("content-type", "application/json")
-
-	res, _ := http.DefaultClient.Do(req)
-
-	defer res.Body.Close()
-	body, _ := io.ReadAll(res.Body)
-
-	fmt.Println(string(body))
-
+type Transaction struct {
+	ID          string    `json:"id"`
+	AccountID   string    `json:"accountId"`
+	ToAddress   string    `json:"toAddress"`
+	FromAddress string    `json:"fromAddress"`
+	Type        string    `json:"type"`   // could also be a custom type or enum for "deposit" or "withdrawal"
+	Amount      string    `json:"amount"` // string to preserve decimal precision
+	Symbol      string    `json:"symbol"`
+	Decimal     int64      `json:"decimal"`
+	Timestamp   time.Time `json:"timestamp"` // using time.Time to parse the date-time format
+	TxnHash     string    `json:"txnHash"`
 }
