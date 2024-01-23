@@ -70,7 +70,7 @@ func translateTranferToTransaction(accountId string, transfer AlchemyTransfer) (
 	if t.AccountID == t.FromAddress {
 		t.Type = "withdrawal"
 	}
-	t.Amount = fmt.Sprint(*transfer.Value) // todo: perhaps only as many digits as decimals in token
+	t.Amount = fmt.Sprint(*transfer.Value) // todo: perhaps only as many digits as decimals in token, error handling
 	t.Symbol = *transfer.Asset
 	t.Timestamp = transfer.Metadata.BlockTimestamp
 	t.TxnHash = transfer.Hash
