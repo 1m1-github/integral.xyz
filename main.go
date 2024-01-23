@@ -10,6 +10,7 @@
 package main
 
 import (
+	"fmt"
 	"net/http"
 
 	"github.com/gin-gonic/gin"
@@ -17,7 +18,12 @@ import (
 )
 
 func main() {
+	fmt.Println("integral.xyz API with endpoints:")
+	fmt.Println("/accounts/:accountId/transactions")
+	fmt.Println("/accounts/:accountId/balances")
+
 	// Initialize the Gin engine.
+	gin.SetMode(gin.ReleaseMode)
 	r := gin.Default()
 
 	// Apply the rate limiter middleware
