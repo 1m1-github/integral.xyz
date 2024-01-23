@@ -1,4 +1,6 @@
 // go build && ./api
+// todo:
+// pagination, rate limiting, input validation, db caching
 
 package main
 
